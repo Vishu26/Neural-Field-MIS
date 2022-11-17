@@ -72,7 +72,7 @@ class NeuralField(pl.LightningModule):
     x = self.activation(self.lin2(x))
     x = self.activation(self.lin3(x))
     x = self.activation(self.lin4(x))
-    x = self.activation(x)
+    x = self.lin5(x)
     return self.out(x)
   
   def shared_step(self, batch):
