@@ -44,7 +44,7 @@ class ImagePrediction(torch.utils.data.Dataset):
         return self.coords
 
 class NeuralField(pl.LightningModule):
-  def __init__(self, dataloader, n, p, activation='sigmoid'):
+  def __init__(self, dataloader, n, p, activation='sigmoid', fourier_features=False, feature_dim=10):
     super().__init__()
     self.dataloader = dataloader
     self.p = p
@@ -59,15 +59,24 @@ class NeuralField(pl.LightningModule):
         self.activation = torch.sin
     else:
         raise ValueError("Activation function not supported") 
-    self.lin1 = nn.Linear(2, n)
+    
     self.lin2 = nn.Linear(n, n)
     self.lin3 = nn.Linear(n, n)
     self.lin4 = nn.Linear(n, n)
     self.lin5 = nn.Linear(n, 1)
     self.out = nn.Tanh()
     self.criterion = MeanSquaredError()
+    self.fourier_features = fourier_features
+    if self.fourier_features:
+        self.B = nn.Parameter(torch.randn(feature_dim//2, 2))
+        self.lin1 = nn.Linear(feature_dim, n)
+    else:
+        self.lin1 = nn.Linear(2, n)
   
   def forward(self, x):
+    if self.fourier_features:
+        x = torch.matmul(x, self.B.T)
+        x = torch.cat([torch.sin(2*np.pi*x), torch.cos(2*np.pi*x)], dim=1)
     x = self.activation(self.lin1(x))
     x = self.activation(self.lin2(x))
     x = self.activation(self.lin3(x))
